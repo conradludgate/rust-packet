@@ -11,7 +11,7 @@ repository  = "https://github.com/meh/rust-packet"
 keywords    = ["packet", "network", "ip", "tcp", "udp"]
 
 [dependencies]
-thiserror = "2"
+thiserror = { version = "2", default-features = false }
 bitflags  = { version = "2.8", features = ["core"] }
 # byteorder = "1"
 # hwaddr    = "0.1"
