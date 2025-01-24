@@ -12,9 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::io::Cursor;
-use byteorder::{WriteBytesExt, BigEndian};
-
 use crate::error::*;
 use crate::buffer::{self, Buffer};
 use crate::builder::{Builder as Build, Finalization};
@@ -170,8 +167,7 @@ impl<B: Buffer> Builder<B> {
 
 			// Calculate the checksum by parsing back the IP packet and set it.
 			let checksum = checksum(&ip::Packet::no_payload(&ip)?, tcp);
-			Cursor::new(&mut tcp[16 ..])
-				.write_u16::<BigEndian>(checksum)?;
+			tcp[16..18].copy_from_slice(&checksum.to_be_bytes());
 
 			Ok(())
 		});
@@ -180,7 +176,7 @@ impl<B: Buffer> Builder<B> {
 
 #[cfg(test)]
 mod test {
-	use std::net::Ipv4Addr;
+	use core::net::Ipv4Addr;
 	use crate::builder::Builder;
 	use crate::packet::Packet;
 	use crate::ip;

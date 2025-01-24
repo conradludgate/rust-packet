@@ -12,12 +12,12 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::fmt;
-use std::io::Cursor;
-use std::net::Ipv4Addr;
-use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
+use core::fmt;
+use core::net::Ipv4Addr;
 
-use crate::error::*;
+use alloc::vec::Vec;
+
+use crate::{error::*, ReadU16};
 use crate::packet::{Packet as P, PacketMut as PM, AsPacket, AsPacketMut};
 use crate::ip::Protocol;
 use crate::ip::v4::Flags;
@@ -205,23 +205,23 @@ impl<B: AsRef<[u8]>> Packet<B> {
 
 	/// Total length of the packet in octets.
 	pub fn length(&self) -> u16 {
-		(&self.buffer.as_ref()[2 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[2 ..]).read_u16().unwrap()
 	}
 
 	/// ID of the packet.
 	pub fn id(&self) -> u16 {
-		(&self.buffer.as_ref()[4 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[4 ..]).read_u16().unwrap()
 	}
 
 	/// Flags of the packet.
 	pub fn flags(&self) -> Flags {
 		Flags::from_bits((&self.buffer.as_ref()[6 ..])
-			.read_u16::<BigEndian>().unwrap() >> 13).unwrap()
+			.read_u16().unwrap() >> 13).unwrap()
 	}
 
 	/// Offset of the packet.
 	pub fn offset(&self) -> u16 {
-		(&self.buffer.as_ref()[6 ..]).read_u16::<BigEndian>().unwrap() & 0x1fff
+		(&self.buffer.as_ref()[6 ..]).read_u16().unwrap() & 0x1fff
 	}
 
 	/// Time to Live for the packet.
@@ -236,7 +236,7 @@ impl<B: AsRef<[u8]>> Packet<B> {
 
 	/// Checksum of the packet.
 	pub fn checksum(&self) -> u16 {
-		(&self.buffer.as_ref()[10 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[10 ..]).read_u16().unwrap()
 	}
 
 	/// Verify the packet is valid by calculating the checksum.
@@ -297,24 +297,21 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
 
 	/// Packet ID.
 	pub fn set_id(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.buffer.as_mut()[4 ..])
-			.write_u16::<BigEndian>(value)?;
+		self.header_mut()[4..6].copy_from_slice(&value.to_be_bytes());
 
 		Ok(self)
 	}
 
 	/// Packet flags.
 	pub fn set_flags(&mut self, value: Flags) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[6 ..])
-			.write_u16::<BigEndian>(value.bits())?;
+		self.header_mut()[6..8].copy_from_slice(&value.bits().to_be_bytes());
 
 		Ok(self)
 	}
 
 	/// Packet fragment offset.
 	pub fn set_offset(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[6 ..])
-			.write_u16::<BigEndian>(value)?;
+		self.header_mut()[6..8].copy_from_slice(&value.to_be_bytes());
 
 		Ok(self)
 	}
@@ -356,8 +353,7 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
 
 	/// Set the checksum value.
 	pub fn set_checksum(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[10 ..])
-			.write_u16::<BigEndian>(value)?;
+		self.header_mut()[10..12].copy_from_slice(&value.to_be_bytes());
 
 		Ok(self)
 	}
@@ -473,7 +469,9 @@ impl<'a> Iterator for OptionIter<'a> {
 
 #[cfg(test)]
 mod test {
-	use std::net::Ipv4Addr;
+	use core::net::Ipv4Addr;
+	use alloc::vec::Vec;
+	use alloc::vec;
 	use crate::ip;
 
 	#[test]

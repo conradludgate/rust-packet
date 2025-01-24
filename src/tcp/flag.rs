@@ -16,6 +16,7 @@ use bitflags::bitflags;
 
 bitflags! {
 	/// TCP flags.
+	#[derive(Debug, Clone, Copy, PartialEq)]
 	pub struct Flags: u16 {
 		///
 		const FIN = 0b0_0000_0001;

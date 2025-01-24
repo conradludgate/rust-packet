@@ -12,7 +12,10 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::fmt;
+use core::fmt;
+
+use alloc::boxed::Box;
+use alloc::vec::Vec;
 
 use crate::error::*;
 use crate::buffer::Buffer;
@@ -72,9 +75,9 @@ impl Finalization {
 
 impl IntoIterator for Finalization {
 	type Item     = Box<dyn Finalizer>;
-	type IntoIter = ::std::vec::IntoIter<Box<dyn Finalizer>>;
+	type IntoIter = ::alloc::vec::IntoIter<Box<dyn Finalizer>>;
 
-	fn into_iter(self) -> ::std::vec::IntoIter<Box<dyn Finalizer>> {
+	fn into_iter(self) -> ::alloc::vec::IntoIter<Box<dyn Finalizer>> {
 		self.0.into_iter()
 	}
 }

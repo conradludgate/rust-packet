@@ -12,9 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::fmt;
-use std::io::Cursor;
-use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
+use core::fmt;
 
 use crate::error::*;
 use crate::packet::{Packet as P, PacketMut as PM, AsPacket, AsPacketMut};

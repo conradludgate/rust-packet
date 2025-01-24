@@ -12,11 +12,10 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::fmt;
-use std::io::Cursor;
-use byteorder::{ReadBytesExt, WriteBytesExt, BigEndian};
+use core::fmt;
+use alloc::vec::Vec;
 
-use crate::error::*;
+use crate::{error::*, ReadU16};
 use crate::packet::{Packet as P, PacketMut as PM, AsPacket, AsPacketMut};
 use crate::ip;
 use crate::udp::checksum;
@@ -166,22 +165,22 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> PM for Packet<B> {
 impl<B: AsRef<[u8]>> Packet<B> {
 	/// Source port.
 	pub fn source(&self) -> u16 {
-		(&self.buffer.as_ref()[0 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[0 ..]).read_u16().unwrap()
 	}
 
 	/// Destination port.
 	pub fn destination(&self) -> u16 {
-		(&self.buffer.as_ref()[2 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[2 ..]).read_u16().unwrap()
 	}
 
 	/// Total length of the packet.
 	pub fn length(&self) -> u16 {
-		(&self.buffer.as_ref()[4 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[4 ..]).read_u16().unwrap()
 	}
 
 	/// Checksum of the packet.
 	pub fn checksum(&self) -> u16 {
-		(&self.buffer.as_ref()[6 ..]).read_u16::<BigEndian>().unwrap()
+		(&self.buffer.as_ref()[6 ..]).read_u16().unwrap()
 	}
 
 	/// Verify the packet is valid by calculating the checksum.
@@ -193,17 +192,13 @@ impl<B: AsRef<[u8]>> Packet<B> {
 impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
 	/// Source port.
 	pub fn set_source(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[0 ..])
-			.write_u16::<BigEndian>(value)?;
-
+		self.header_mut()[0..2].copy_from_slice(&value.to_be_bytes());
 		Ok(self)
 	}
 
 	/// Destination port.
 	pub fn set_destination(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[2 ..])
-			.write_u16::<BigEndian>(value)?;
-
+		self.header_mut()[2..4].copy_from_slice(&value.to_be_bytes());
 		Ok(self)
 	}
 
@@ -217,9 +212,7 @@ impl<B: AsRef<[u8]> + AsMut<[u8]>> Packet<B> {
 
 	/// Set the checksum value.
 	pub fn set_checksum(&mut self, value: u16) -> Result<&mut Self> {
-		Cursor::new(&mut self.header_mut()[6 ..])
-			.write_u16::<BigEndian>(value)?;
-
+		self.header_mut()[6..8].copy_from_slice(&value.to_be_bytes());
 		Ok(self)
 	}
 

@@ -37,9 +37,6 @@ use crate::ip::Protocol;
 /// Since the checksum for UDP packets includes a pseudo-header based on the
 /// enclosing IP packet, one has to be given.
 pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
-    use std::io::Cursor;
-    use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
-
     let buffer_length = buffer.len();
     let mut prefix = [0u8; 40];
     match *ip {
@@ -67,16 +64,16 @@ pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
             Cursor::new(&prefix[0..40]),
     };
 
-    while let Ok(value) = prefix.read_u16::<BigEndian>() {
+    while let Ok(value) = prefix.read_u16() {
         result += u32::from(value);
     }
 
     let mut bytes_read = 0;
-    while let Ok(value) = buffer.read_u16::<BigEndian>() {
+    while let Ok(value) = buffer.read_u16() {
         bytes_read += 2;
 
         // Skip checksum field.
-        if buffer.position() == 18 {
+        if bytes_read == 18 {
             continue;
         }
 

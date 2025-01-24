@@ -12,6 +12,8 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
+use alloc::vec::Vec;
+
 use crate::error::*;
 use crate::packet::{Packet as P, PacketMut as PM, AsPacket, AsPacketMut};
 use crate::size;

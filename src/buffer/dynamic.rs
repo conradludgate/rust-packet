@@ -12,7 +12,9 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::ops::{Deref, DerefMut};
+use core::ops::{Deref, DerefMut};
+
+use alloc::vec::Vec;
 
 use crate::error::*;
 

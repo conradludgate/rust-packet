@@ -11,8 +11,13 @@
 //   TERMS AND CONDITIONS FOR COPYING, DISTRIBUTION AND MODIFICATION
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
+#![no_std]
+
+extern crate alloc;
 
 mod error;
+use core::convert::TryInto;
+
 pub use crate::error::*;
 
 /// Packet size traits.
@@ -31,17 +36,35 @@ pub use crate::buffer::Buffer;
 pub mod builder;
 pub use crate::builder::Builder;
 
-/// Ethernet packet parser and builder.
-pub mod ether;
+// /// Ethernet packet parser and builder.
+// pub mod ether;
 
 /// IPv4 and IPv6 packet parser and builder.
 pub mod ip;
 
-/// ICMP packet parser and builder.
-pub mod icmp;
+// /// ICMP packet parser and builder.
+// pub mod icmp;
 
-/// TCP packet parser and builder.
-pub mod tcp;
+// /// TCP packet parser and builder.
+// pub mod tcp;
 
 /// UDP packet parser and builder.
 pub mod udp;
+
+trait ReadU16 {
+    fn read_u16(&mut self) -> Result<u16>;
+    fn read_u8(&mut self) -> Result<u8>;
+}
+
+impl ReadU16 for &[u8] {
+    fn read_u16(&mut self) -> Result<u16> {
+        let (a, b) = self.split_at_checked(2).ok_or(Error::SmallBuffer)?;
+        *self = b;
+        Ok(u16::from_be_bytes(a.try_into().unwrap()))
+    }
+    fn read_u8(&mut self) -> Result<u8> {
+        let (a, b) = self.split_at_checked(1).ok_or(Error::SmallBuffer)?;
+        *self = b;
+        Ok(u8::from_be_bytes(a.try_into().unwrap()))
+    }
+}

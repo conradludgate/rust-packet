@@ -18,7 +18,7 @@ pub use self::packet::Packet;
 mod builder;
 pub use self::builder::Builder;
 
-use crate::ip;
+use crate::{ip, ReadU16};
 use crate::ip::Protocol;
 
 /// Calculate the checksum for a UDP packet.
@@ -27,9 +27,8 @@ use crate::ip::Protocol;
 ///
 /// Since the checksum for UDP packets includes a pseudo-header based on the
 /// enclosing IP packet, one has to be given.
-pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
-	use std::io::Cursor;
-	use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
+pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, mut buffer: &[u8]) -> u16 {
+	// use byteorder::{WriteBytesExt, ReadBytesExt, BigEndian};
 
 	let mut prefix = [0u8; 40];
 	match *ip {
@@ -38,8 +37,7 @@ pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
 			prefix[4 .. 8].copy_from_slice(&packet.destination().octets());
 
 			prefix[9] = Protocol::Udp.into();
-			Cursor::new(&mut prefix[10 ..])
-				.write_u16::<BigEndian>(buffer.len() as u16).unwrap();
+			prefix[10..12].copy_from_slice(&(buffer.len() as u16).to_be_bytes());
 		}
 
 		ip::Packet::V6(ref _packet) => {
@@ -48,16 +46,15 @@ pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
 	};
 
 	let mut result = 0x0000u32;
-	let mut buffer = Cursor::new(buffer);
 	let mut prefix = match *ip {
 		ip::Packet::V4(_) =>
-			Cursor::new(&prefix[0 .. 12]),
+			&prefix[0 .. 12],
 
 		ip::Packet::V6(_) =>
-			Cursor::new(&prefix[0 .. 40]),
+			&prefix[0 .. 40],
 	};
 
-	while let Ok(value) = prefix.read_u16::<BigEndian>() {
+	while let Ok(value) = prefix.read_u16() {
 		result += u32::from(value);
 
 		if result > 0xffff {
@@ -65,9 +62,11 @@ pub fn checksum<B: AsRef<[u8]>>(ip: &ip::Packet<B>, buffer: &[u8]) -> u16 {
 		}
 	}
 
-	while let Ok(value) = buffer.read_u16::<BigEndian>() {
+	let mut count = 0;
+	while let Ok(value) = buffer.read_u16() {
+		count += 2;
 		// Skip checksum field.
-		if buffer.position() == 8 {
+		if count == 8 {
 			continue;
 		}
 

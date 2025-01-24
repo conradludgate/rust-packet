@@ -12,7 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::{io, ffi};
+// use std::{io, ffi};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -29,11 +29,11 @@ pub enum Error {
 	#[error("the value has already been defined")]
 	AlreadyDefined,
 
-	#[error(transparent)]
-	Io(#[from] io::Error),
+	// #[error(transparent)]
+	// Io(#[from] io::Error),
 
-	#[error(transparent)]
-	Nul(#[from] ffi::NulError),
+	// #[error(transparent)]
+	// Nul(#[from] ffi::NulError),
 }
 
-pub type Result<T> = ::std::result::Result<T, Error>;
+pub type Result<T> = ::core::result::Result<T, Error>;

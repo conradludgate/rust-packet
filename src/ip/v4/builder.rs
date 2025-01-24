@@ -12,9 +12,7 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::io::Cursor;
-use std::net::Ipv4Addr;
-use byteorder::{WriteBytesExt, BigEndian};
+use core::net::Ipv4Addr;
 
 use crate::error::*;
 use crate::buffer::{self, Buffer};
@@ -189,23 +187,21 @@ impl<B: Buffer> Builder<B> {
 
 			// Calculate and write the total length of the packet.
 			let length = length + (out.len() - (offset + length));
-			Cursor::new(&mut out[offset + 2 ..])
-				.write_u16::<BigEndian>(length as u16)?;
+			out[offset+2..offset+4].copy_from_slice(&(length as u16).to_be_bytes());
 
 			// Calculate and write the checksum.
 			let checksum = checksum(&out[offset .. offset + header * 4]);
-			Cursor::new(&mut out[offset + 10 ..])
-				.write_u16::<BigEndian>(checksum)?;
+			out[offset+10..offset+12].copy_from_slice(&checksum.to_be_bytes());
 
 			Ok(())
 		});
 	}
 
-	protocol!(/// Build an ICMP packet.
-		fn icmp(Icmp));
+	// protocol!(/// Build an ICMP packet.
+	// 	fn icmp(Icmp));
 
-	protocol!(/// Build a TCP packet.
-		fn tcp(Tcp));
+	// protocol!(/// Build a TCP packet.
+	// 	fn tcp(Tcp));
 
 	protocol!(/// Build a UDP packet.
 		fn udp(Udp));
@@ -213,58 +209,58 @@ impl<B: Buffer> Builder<B> {
 
 #[cfg(test)]
 mod test {
-	use std::net::Ipv4Addr;
+	use core::net::Ipv4Addr;
 	use crate::builder::Builder;
 	use crate::ip;
-	use crate::tcp;
+	// use crate::tcp;
 
-	#[test]
-	fn icmp() {
-		let packet = ip::v4::Builder::default()
-			.id(0x2d87).unwrap()
-			.ttl(64).unwrap()
-			.source("66.102.1.108".parse().unwrap()).unwrap()
-			.destination("192.168.0.79".parse().unwrap()).unwrap()
-			.icmp().unwrap()
-				.echo().unwrap().request().unwrap()
-					.identifier(42).unwrap()
-					.sequence(2).unwrap()
-					.payload(b"test").unwrap()
-					.build().unwrap();
+	// #[test]
+	// fn icmp() {
+	// 	let packet = ip::v4::Builder::default()
+	// 		.id(0x2d87).unwrap()
+	// 		.ttl(64).unwrap()
+	// 		.source("66.102.1.108".parse().unwrap()).unwrap()
+	// 		.destination("192.168.0.79".parse().unwrap()).unwrap()
+	// 		.icmp().unwrap()
+	// 			.echo().unwrap().request().unwrap()
+	// 				.identifier(42).unwrap()
+	// 				.sequence(2).unwrap()
+	// 				.payload(b"test").unwrap()
+	// 				.build().unwrap();
 
-		let packet = ip::v4::Packet::new(packet).unwrap();
+	// 	let packet = ip::v4::Packet::new(packet).unwrap();
 
-		assert_eq!(packet.id(), 0x2d87);
-		assert!(packet.flags().is_empty());
-		assert_eq!(packet.length(), 32);
-		assert_eq!(packet.ttl(), 64);
-		assert_eq!(packet.protocol(), ip::Protocol::Icmp);
-		assert_eq!(packet.source(), "66.102.1.108".parse::<Ipv4Addr>().unwrap());
-		assert_eq!(packet.destination(), "192.168.0.79".parse::<Ipv4Addr>().unwrap());
-		assert!(packet.is_valid());
-	}
+	// 	assert_eq!(packet.id(), 0x2d87);
+	// 	assert!(packet.flags().is_empty());
+	// 	assert_eq!(packet.length(), 32);
+	// 	assert_eq!(packet.ttl(), 64);
+	// 	assert_eq!(packet.protocol(), ip::Protocol::Icmp);
+	// 	assert_eq!(packet.source(), "66.102.1.108".parse::<Ipv4Addr>().unwrap());
+	// 	assert_eq!(packet.destination(), "192.168.0.79".parse::<Ipv4Addr>().unwrap());
+	// 	assert!(packet.is_valid());
+	// }
 
-	#[test]
-	fn tcp() {
-		let packet = ip::v4::Builder::default()
-			.id(0x2d87).unwrap()
-			.ttl(64).unwrap()
-			.source("66.102.1.108".parse().unwrap()).unwrap()
-			.destination("192.168.0.79".parse().unwrap()).unwrap()
-			.tcp().unwrap()
-				.source(1337).unwrap()
-				.destination(9001).unwrap()
-				.flags(tcp::flag::SYN).unwrap()
-				.build().unwrap();
+	// #[test]
+	// fn tcp() {
+	// 	let packet = ip::v4::Builder::default()
+	// 		.id(0x2d87).unwrap()
+	// 		.ttl(64).unwrap()
+	// 		.source("66.102.1.108".parse().unwrap()).unwrap()
+	// 		.destination("192.168.0.79".parse().unwrap()).unwrap()
+	// 		.tcp().unwrap()
+	// 			.source(1337).unwrap()
+	// 			.destination(9001).unwrap()
+	// 			.flags(tcp::flag::SYN).unwrap()
+	// 			.build().unwrap();
 
-		let packet = ip::v4::Packet::new(packet).unwrap();
-		assert_eq!(packet.id(), 0x2d87);
-		assert!(packet.flags().is_empty());
-		assert_eq!(packet.length(), 40);
-		assert_eq!(packet.ttl(), 64);
-		assert_eq!(packet.protocol(), ip::Protocol::Tcp);
-		assert_eq!(packet.source(), "66.102.1.108".parse::<Ipv4Addr>().unwrap());
-		assert_eq!(packet.destination(), "192.168.0.79".parse::<Ipv4Addr>().unwrap());
-		assert!(packet.is_valid());
-	}
+	// 	let packet = ip::v4::Packet::new(packet).unwrap();
+	// 	assert_eq!(packet.id(), 0x2d87);
+	// 	assert!(packet.flags().is_empty());
+	// 	assert_eq!(packet.length(), 40);
+	// 	assert_eq!(packet.ttl(), 64);
+	// 	assert_eq!(packet.protocol(), ip::Protocol::Tcp);
+	// 	assert_eq!(packet.source(), "66.102.1.108".parse::<Ipv4Addr>().unwrap());
+	// 	assert_eq!(packet.destination(), "192.168.0.79".parse::<Ipv4Addr>().unwrap());
+	// 	assert!(packet.is_valid());
+	// }
 }

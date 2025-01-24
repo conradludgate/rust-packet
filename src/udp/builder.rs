@@ -12,9 +12,6 @@
 //
 //  0. You just DO WHAT THE FUCK YOU WANT TO.
 
-use std::io::Cursor;
-use byteorder::{WriteBytesExt, BigEndian};
-
 use crate::error::*;
 use crate::buffer::{self, Buffer};
 use crate::builder::{Builder as Build, Finalization};
@@ -118,8 +115,7 @@ impl<B: Buffer> Builder<B> {
 			let ip              = &mut before[ip.0 ..];
 			let udp             = &mut after[.. length];
 
-			Cursor::new(&mut udp[4 ..])
-				.write_u16::<BigEndian>(length as u16)?;
+			udp[4..6].copy_from_slice(&(length as u16).to_be_bytes());
 
 			let checksum: Result<u16> = if let Ok(packet) = ip::v4::Packet::no_payload(&ip) {
 				Ok(checksum(&ip::Packet::from(packet), udp))
@@ -131,8 +127,7 @@ impl<B: Buffer> Builder<B> {
 				Err(Error::InvalidPacket)?
 			};
 
-			Cursor::new(&mut udp[6 ..])
-				.write_u16::<BigEndian>(checksum?)?;
+			udp[6..8].copy_from_slice(&checksum?.to_be_bytes());
 
 			Ok(())
 		});
@@ -141,7 +136,7 @@ impl<B: Buffer> Builder<B> {
 
 #[cfg(test)]
 mod test {
-	use std::net::Ipv4Addr;
+	use core::net::Ipv4Addr;
 	use crate::builder::Builder;
 	use crate::packet::Packet;
 	use crate::ip;

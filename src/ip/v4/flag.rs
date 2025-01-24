@@ -16,6 +16,7 @@ use bitflags::bitflags;
 
 bitflags! {
 	/// IPv4 packet flags.
+	#[derive(Debug, Clone, Copy, PartialEq)]
 	pub struct Flags: u16 {
 		/// Do not fragment packets.
 		const DONT_FRAGMENT = 0b010;
